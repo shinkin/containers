@@ -1,0 +1,53 @@
+FROM debian:buster
+
+RUN apt-get update
+RUN apt-get -y install sudo
+RUN apt-get -y install ssh mc nano gnupg wget curl
+RUN sh -c 'echo " deb http://apt.postgresql.org/pub/repos/apt/ buster-pgdg main " >> /etc/apt/sources.list.d/pgdg.list'
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+RUN apt-get update
+RUN apt-get -y install postgresql-12 postgresql-contrib-12
+RUN apt install -y apt-transport-https ca-certificates wget dirmngr gnupg software-properties-common
+RUN wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
+RUN add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+RUN apt-get update
+RUN apt-get -y install adoptopenjdk-8-hotspot
+RUN apt-get -y install default-jdk
+RUN groupadd -r wildfly
+RUN useradd -r -g wildfly -d /opt/wildfly -s /sbin/nologin wildfly
+RUN wget https://download.jboss.org/wildfly/16.0.0.Final/wildfly-16.0.0.Final.tar.gz -P /tmp
+RUN tar xf /tmp/wildfly-16.0.0.Final.tar.gz -C /opt/
+RUN ln -s /opt/wildfly-16.0.0.Final /opt/wildfly
+RUN chown -RH wildfly: /opt/wildfly
+RUN wget https://wiki.radius-it.ru/wp-content/uploads/2021/09/scada.tar -P /opt/
+RUN tar xf /opt/scada.tar -C /opt/
+RUN cp -r /opt/scada/wildfly/modules /opt/wildfly/
+RUN cp -r /opt/scada/wildfly/standalone /opt/wildfly/
+RUN cp -r /opt/scada/wildfly/ise-content /opt/wildfly/
+RUN cp -r /opt/scada/wildfly/bin/start.sh /opt/wildfly/bin/start.sh
+RUN cp -r /opt/scada/wildfly/bin/stop.sh /opt/wildfly/bin/stop.sh
+RUN cp -r /opt/scada/12 /var/lib/postgresql/
+RUN cp -r /opt/scada/jdk /opt/
+RUN cp -r /opt/scada/mrsk /opt/
+RUN chown postgres:postgres /var/lib/postgresql/12/main/postmaster.opts
+RUN chown -R postgres:postgres /var/lib/postgresql/12
+RUN wget https://wiki.radius-it.ru/wp-content/uploads/2021/09/deploynew.tar -P /opt/
+RUN tar xf /opt/deploynew.tar -C /opt/
+RUN rm -rf /opt/scada.tar
+RUN rm -rf /opt/deploynew.tar
+RUN rm -rf /opt/wildfly/standalone/deployments/administration-ear.ear.deployed
+RUN rm -rf /opt/wildfly/standalone/deployments/application-ear.ear.deployed
+RUN rm -rf /opt/wildfly/standalone/deployments/application-ear.ear
+RUN rm -rf /opt/wildfly/standalone/deployments/administration-ear.ear
+RUN cp -r /opt/deploynew/administration-ear.ear /opt/wildfly/standalone/deployments/
+RUN cp -r /opt/deploynew/application-ear.ear /opt/wildfly/standalone/deployments/
+RUN rm -rf /opt/wildfly/modules/system/layers/base/su/opencode/ise/module/main/module-api-1.0-SNAPSHOT.jar
+RUN rm -rf /opt/wildfly/modules/system/layers/base/su/opencode/ise/module/main/module-ejb-1.0-SNAPSHOT.jar
+RUN rm -rf /opt/wildfly/modules/system/layers/base/su/opencode/ise/module/main/module-impl-1.0-SNAPSHOT.jar
+RUN cp -r /opt/deploynew/module-api-1.0-SNAPSHOT.jar /opt/wildfly/modules/system/layers/base/su/opencode/ise/module/main/
+RUN cp -r /opt/deploynew/module-ejb-1.0-SNAPSHOT.jar /opt/wildfly/modules/system/layers/base/su/opencode/ise/module/main/
+RUN cp -r /opt/deploynew/module-impl-1.0-SNAPSHOT.jar /opt/wildfly/modules/system/layers/base/su/opencode/ise/module/main/
+RUN rm -rf /opt/wildfly/modules/system/layers/base/su/opencode/ise/application/main/application-api-0.1-SNAPSHOT.jar
+RUN rm -rf /opt/wildfly/modules/system/layers/base/su/opencode/ise/application/main/application-impl-0.1-SNAPSHOT.jar
+RUN cp -r /opt/deploynew/application-api-0.1-SNAPSHOT.jar /opt/wildfly/modules/system/layers/base/su/opencode/ise/application/main/
+RUN cp -r /opt/deploynew/application-impl-0.1-SNAPSHOT.jar /opt/wildfly/modules/system/layers/base/su/opencode/ise/application/main/
